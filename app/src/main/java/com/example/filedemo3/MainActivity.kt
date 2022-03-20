@@ -56,16 +56,20 @@ class MainActivity : AppCompatActivity() {
 
     fun setData() {
         currentFolder = Environment.getExternalStorageDirectory()
-        contents.addAll(currentFolder.listFiles()!!)
+        contents.addAll(currentFolder.listFiles()!!.sortedWith(compareBy({ !it.isDirectory }, {
+            it.nameWithoutExtension.lowercase(Locale.getDefault())
+        })))
     }
 
     fun switchDirectory(dir: File) {
         if (dir.isFile) return
-        val list = dir.listFiles()!!.toMutableList()
+        val list = dir.listFiles()!!.toMutableList().sortedWith(compareBy({ !it.isDirectory }, {
+            it.nameWithoutExtension.lowercase(Locale.getDefault())
+        }))
         currentFolder = dir
         adapter.reset(list)
     }
-
+    
     private fun requestManagerAllFilesPermission(c: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
@@ -80,12 +84,7 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (currentFolder.hasParent()) {
             currentFolder = currentFolder.parentFile!!
-            val lists = currentFolder.listFiles()
-            lists?.let {
-                contents.clear()
-                contents.addAll(it.toMutableList())
-                adapter.reset(contents)
-            }
+            switchDirectory(currentFolder)
             return
         } else if (System.currentTimeMillis() - this.mExitTime > (2000)) {
             Toast.makeText(this, "再按一次退出程序", Toast.LENGTH_SHORT).show()
